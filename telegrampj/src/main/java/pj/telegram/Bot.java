@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import pj.telegram.TelegramService.ChatService;
 
 public class Bot extends TelegramLongPollingBot {
     @Override
@@ -31,17 +32,31 @@ public class Bot extends TelegramLongPollingBot {
         JSONObject userJson = new JSONObject(user);
         AirtableService airtableService = new AirtableService();
         System.out.println(msg);
+
         try {
             airtableService.sendUserData(airtableService.convertUserJsonObjectToFormattedJsonObject(userJson));
             System.out.println(airtableService.convertUserJsonObjectToFormattedJsonObject(userJson));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
-        // copyMessage(id, msg.getMessageId());
+
+        // Command
+
         if (msg.isCommand()) {
-            if (msg.getText().equals("/tell1")) {
-                tell1(id);
+            switch (msg.getText()) {
+                case "/createchatinvitelink@mireithelosebot":   
+                    String respond = ChatService.createChatInviteLink(getBotToken(), msg.getChatId().toString());
+                    sendText(msg.getChat().getId(), respond);
+                    break;
+                case "/tell1":
+                    tell1(id);
+                    break;
+                case "/copy":
+                    copyMessage(id, msg.getMessageId());
+                    break;
+                default:
+                    sendText(id, "I don't understand that command.");
+                    break;
             }
         }
 
