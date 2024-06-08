@@ -67,7 +67,6 @@ public class BotService extends TelegramLongPollingBot {
         try {
             execute(sm);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
         }
     }
 
@@ -89,7 +88,6 @@ public class BotService extends TelegramLongPollingBot {
                 return "Failed, status code: " + response.statusCode();
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
             Thread.currentThread().interrupt();
         }
         return "Failed";
