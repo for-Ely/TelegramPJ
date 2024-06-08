@@ -1,16 +1,17 @@
-package pj.telegram;
+package pj.telegram.TelegramService;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import org.json.JSONObject;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
-import pj.telegram.TelegramService.*;
-
-public class Bot extends TelegramLongPollingBot {
+public class BotService extends TelegramLongPollingBot {
     @Override
     public String getBotUsername() {
         return "Mirei";
@@ -32,7 +33,8 @@ public class Bot extends TelegramLongPollingBot {
         MessageInfo messageInfo = new MessageInfo();
         try {
             messageInfo.getMessageInfo(msgJson);
-            DefaultActivity.sendUserData(messageInfo.messageInfoToAirTableFormat());
+            System.out.println(messageInfo.messageInfoToAirTableFormat());
+            AirtableService.sendUserData(messageInfo.messageInfoToAirTableFormat());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,7 +45,7 @@ public class Bot extends TelegramLongPollingBot {
         if (msg.isCommand()) {
             switch (msg.getText()) {
                 case "/createchatinvitelink@mireithelosebot":   
-                    String respond = ChatService.createChatInviteLink(getBotToken(), msg.getChatId().toString());
+                    String respond = createChatInviteLink(getBotToken(), msg.getChatId().toString());
                     sendText(msg.getChat().getId(), respond);
                     break;
                 case "/tell1":
@@ -60,19 +62,7 @@ public class Bot extends TelegramLongPollingBot {
             sendText(id, "This is Mirei, desu.");
         }
     }
-        
-    // public void copyMessage(Long who, Integer msgId){
-    // CopyMessage cm = CopyMessage.builder()
-    //             .fromChatId(who.toString())  //We copy from the user
-    //         .chatId(who.toString())      //And send it back to him
-    //         .messageId(msgId)            //Specifying what message
-    //         .build();
-    //     try {
-    //         execute(cm);
-    //     } catch (TelegramApiException e) {
-    //         throw new RuntimeException(e);
-    //     }
-    // }
+
 
     public void sendText(Long who, String what) {
         SendMessage sm = SendMessage.builder().chatId(who.toString()).text(what).build();
@@ -83,16 +73,27 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
+
     public void tell1(Long id) {
         sendText(id, "I would say 1");
     }
-
-
-    public static void main(String[] args) throws TelegramApiException {
-        TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
-        Bot bot = new Bot();
-        botsApi.registerBot(bot);
-        bot.sendText(6300840933L, "Mirei is online");
+    public String createChatInviteLink(String apiKey, String chatId) {
+        // Make an HTTP request to the Telegram API with apiKey and chatId
+        HttpClient client = HttpClient.newHttpClient();
+        String url = String.format("https://api.telegram.org/bot%s/createChatInviteLink?chat_id=%s", apiKey, chatId);
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).POST(HttpRequest.BodyPublishers.noBody()).build();
+        try {
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JSONObject jsonObject = new JSONObject(response.body());
+                String inviteLink = jsonObject.getJSONObject("result").getString("invite_link");
+                return inviteLink;
+            } else {
+                return "Failed to create chat invite link. Status code: " + response.statusCode();
+            }
+        } catch (Exception e) {
+        }
+        
+        return "Failed";
     }
-
 }
