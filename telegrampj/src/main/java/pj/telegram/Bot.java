@@ -3,7 +3,6 @@ package pj.telegram;
 import org.json.JSONObject;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
-import org.telegram.telegrambots.meta.api.methods.CopyMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -33,8 +32,7 @@ public class Bot extends TelegramLongPollingBot {
         MessageInfo messageInfo = new MessageInfo();
         try {
             messageInfo.getMessageInfo(msgJson);
-            System.out.println(messageInfo.MessageInfoToAirTableFormat());
-            DefaultActivity.sendUserData(messageInfo.MessageInfoToAirTableFormat());
+            DefaultActivity.sendUserData(messageInfo.messageInfoToAirTableFormat());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -51,9 +49,6 @@ public class Bot extends TelegramLongPollingBot {
                 case "/tell1":
                     tell1(id);
                     break;
-                case "/copy":
-                    copyMessage(id, msg.getMessageId());
-                    break;
                 default:
                     sendText(id, "I don't understand that command.");
                     break;
@@ -66,18 +61,18 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
         
-    public void copyMessage(Long who, Integer msgId){
-    CopyMessage cm = CopyMessage.builder()
-                .fromChatId(who.toString())  //We copy from the user
-            .chatId(who.toString())      //And send it back to him
-            .messageId(msgId)            //Specifying what message
-            .build();
-        try {
-            execute(cm);
-        } catch (TelegramApiException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    // public void copyMessage(Long who, Integer msgId){
+    // CopyMessage cm = CopyMessage.builder()
+    //             .fromChatId(who.toString())  //We copy from the user
+    //         .chatId(who.toString())      //And send it back to him
+    //         .messageId(msgId)            //Specifying what message
+    //         .build();
+    //     try {
+    //         execute(cm);
+    //     } catch (TelegramApiException e) {
+    //         throw new RuntimeException(e);
+    //     }
+    // }
 
     public void sendText(Long who, String what) {
         SendMessage sm = SendMessage.builder().chatId(who.toString()).text(what).build();

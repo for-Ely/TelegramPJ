@@ -131,7 +131,7 @@ public class MessageInfo {
         this.caption = msg.optString("caption", null);
     }
 
-    public JSONObject MessageInfoToAirTableFormat() {
+    public JSONObject messageInfoToAirTableFormat() {
         JSONObject fields = new JSONObject();
         fields.put("userID", this.userID);
         fields.put("firstName", this.firstName);
