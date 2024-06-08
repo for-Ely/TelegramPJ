@@ -66,8 +66,7 @@ public class BotService extends TelegramLongPollingBot {
         SendMessage sm = SendMessage.builder().chatId(who.toString()).text(what).build();
         try {
             execute(sm);
-        } catch (TelegramApiException e) {
-        }
+        } catch (TelegramApiException e)
     }
 
 
