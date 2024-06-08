@@ -9,7 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
-import pj.telegram.TelegramService.ChatService;
+import pj.telegram.TelegramService.*;
 
 public class Bot extends TelegramLongPollingBot {
     @Override
@@ -28,14 +28,14 @@ public class Bot extends TelegramLongPollingBot {
         var msg = update.getMessage();
         var user = msg.getFrom();
         var id = user.getId();
-        System.out.println(user.getFirstName() + ": " + msg.getText());
-        JSONObject userJson = new JSONObject(user);
-        AirtableService airtableService = new AirtableService();
-        System.out.println(msg);
 
+        JSONObject msgJson = new JSONObject(msg);
+        MessageInfo messageInfo = new MessageInfo();
         try {
-            airtableService.sendUserData(airtableService.convertUserJsonObjectToFormattedJsonObject(userJson));
-            System.out.println(airtableService.convertUserJsonObjectToFormattedJsonObject(userJson));
+            messageInfo.getMessageInfo(msgJson);
+            System.out.println(messageInfo.MessageInfoToAirTableFormat());
+            DefaultActivity.sendUserData(messageInfo.MessageInfoToAirTableFormat());
+
         } catch (Exception e) {
             e.printStackTrace();
         }

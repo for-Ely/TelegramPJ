@@ -10,7 +10,7 @@ import org.json.JSONObject;
 public class ChatService {
     // Create a chat invite link
     public static String createChatInviteLink(String apiKey, String chatId) {
-        // Create a new chat invite link
+        // Make an HTTP request to the Telegram API with apiKey and chatId
         HttpClient client = HttpClient.newHttpClient();
         String url = String.format("https://api.telegram.org/bot%s/createChatInviteLink?chat_id=%s", apiKey, chatId);
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).POST(HttpRequest.BodyPublishers.noBody()).build();
