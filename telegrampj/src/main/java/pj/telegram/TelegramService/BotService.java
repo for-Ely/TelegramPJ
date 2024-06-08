@@ -1,5 +1,6 @@
-package pj.telegram.TelegramService;
+package pj.telegram.telegramservice;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,8 +20,7 @@ public class BotService extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
-        String apiKey = System.getenv("api_telegram_mirei");
-        return apiKey;
+        return System.getenv("api_telegram_mirei");
     }
 
     @Override
@@ -33,7 +33,7 @@ public class BotService extends TelegramLongPollingBot {
         MessageInfo messageInfo = new MessageInfo();
         try {
             messageInfo.getMessageInfo(msgJson);
-            System.out.println(messageInfo.messageInfoToAirTableFormat());
+            // System.out.println(messageInfo.messageInfoToAirTableFormat());
             AirtableService.sendUserData(messageInfo.messageInfoToAirTableFormat());
 
         } catch (Exception e) {
@@ -58,7 +58,6 @@ public class BotService extends TelegramLongPollingBot {
         }
 
         if (msg.getText().equals("Mirei")) {
-            System.out.println(id);
             sendText(id, "This is Mirei, desu.");
         }
     }
@@ -69,7 +68,7 @@ public class BotService extends TelegramLongPollingBot {
         try {
             execute(sm);
         } catch (TelegramApiException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
     }
 
@@ -86,14 +85,13 @@ public class BotService extends TelegramLongPollingBot {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
                 JSONObject jsonObject = new JSONObject(response.body());
-                String inviteLink = jsonObject.getJSONObject("result").getString("invite_link");
-                return inviteLink;
+                return jsonObject.getJSONObject("result").getString("invite_link");
             } else {
-                return "Failed to create chat invite link. Status code: " + response.statusCode();
+                return "Failed, status code: " + response.statusCode();
             }
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
         }
-        
         return "Failed";
     }
 }

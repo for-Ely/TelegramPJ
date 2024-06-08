@@ -1,4 +1,4 @@
-package pj.telegram.TelegramService;
+package pj.telegram.telegramservice;
 
 import java.util.ArrayList;
 

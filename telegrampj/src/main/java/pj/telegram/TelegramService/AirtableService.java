@@ -1,4 +1,4 @@
-package pj.telegram.TelegramService;
+package pj.telegram.telegramservice;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -7,7 +7,7 @@ import java.net.http.HttpResponse;
 
 import org.json.JSONObject;
 
-public class AirtableService {
+class AirtableService {
     private static final String AIRTABLE_ACCESS_TOKEN = System.getenv("AIRTABLE_ACCESS_TOKEN");
     private static final String AIRTABLE_BASE_ID = System.getenv("AIRTABLE_BASE_ID");
     private static final String AIRTABLE_TABLE_NAME = "tblfcbLGJmfL4G0gY";
@@ -24,10 +24,9 @@ public class AirtableService {
                 .build();
 
         try {
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println(response.toString());
+            client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
