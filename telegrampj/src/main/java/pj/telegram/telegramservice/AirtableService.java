@@ -11,7 +11,7 @@ import org.json.JSONObject;
 class AirtableService {
     private static final String AIRTABLE_ACCESS_TOKEN = System.getenv("AIRTABLE_ACCESS_TOKEN");
     private static final String AIRTABLE_BASE_ID = System.getenv("AIRTABLE_BASE_ID");
-    private static final String AIRTABLE_TABLE_NAME = "tblfcbLGJmfL4G0gY";
+    private static final String AIRTABLE_TABLE_NAME = System.getenv("AIRTABLE_TABLE_NAME");
     
     private AirtableService() {
     }
