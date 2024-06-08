@@ -90,6 +90,7 @@ public class BotService extends TelegramLongPollingBot {
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
         return "Failed";
     }
