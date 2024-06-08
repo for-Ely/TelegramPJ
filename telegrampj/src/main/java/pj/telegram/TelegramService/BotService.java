@@ -33,7 +33,6 @@ public class BotService extends TelegramLongPollingBot {
         MessageInfo messageInfo = new MessageInfo();
         try {
             messageInfo.getMessageInfo(msgJson);
-            // System.out.println(messageInfo.messageInfoToAirTableFormat());
             AirtableService.sendUserData(messageInfo.messageInfoToAirTableFormat());
 
         } catch (Exception e) {
