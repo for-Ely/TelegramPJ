@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 
 import org.json.JSONObject;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -47,9 +48,10 @@ public class BotService extends TelegramLongPollingBot {
                     String respond = createChatInviteLink(getBotToken(), msg.getChatId().toString());
                     sendText(msg.getChat().getId(), respond);
                     break;
-                case "/tell1":
-                    tell1(id);
-                    break;
+                case "/sendinvitelink@mireithelosebot":
+                    List<Long> userIds = AirtableService.getUserList();
+                    sendInviteLink(userIds, msg.getChatId().toString());
+                    break;                
                 default:
                     sendText(id, "I don't understand that command.");
                     break;
@@ -60,19 +62,18 @@ public class BotService extends TelegramLongPollingBot {
             sendText(id, "This is Mirei, desu.");
         }
     }
-
+    // Command List
 
     public void sendText(Long who, String what) {
         SendMessage sm = SendMessage.builder().chatId(who.toString()).text(what).build();
         try {
             execute(sm);
-        } catch (TelegramApiException e)
+        }
+        catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
     }
 
-
-    public void tell1(Long id) {
-        sendText(id, "I would say 1");
-    }
     public String createChatInviteLink(String apiKey, String chatId) {
         // Make an HTTP request to the Telegram API with apiKey and chatId
         HttpClient client = HttpClient.newHttpClient();
@@ -90,5 +91,11 @@ public class BotService extends TelegramLongPollingBot {
             Thread.currentThread().interrupt();
         }
         return "Failed";
+    }
+    public void sendInviteLink(List<Long> userIds, String chatId) {
+        String inviteLink = createChatInviteLink(getBotToken(), chatId);
+        userIds.forEach(userId -> {
+            sendText(userId, inviteLink);
+        });
     }
 }
