@@ -92,6 +92,8 @@ public class BotService extends TelegramLongPollingBot {
         }
         return "Failed";
     }
+
+    
     public void sendInviteLink(List<Long> userIds, String chatId) {
         String inviteLink = createChatInviteLink(getBotToken(), chatId);
         userIds.forEach(userId -> {
