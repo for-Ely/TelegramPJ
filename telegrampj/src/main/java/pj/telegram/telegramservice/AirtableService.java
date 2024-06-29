@@ -19,17 +19,20 @@ public class AirtableService {
     }
 
     public static void sendUserData(JSONObject data) {
+        System.out.println(data);
         HttpClient client = HttpClient.newHttpClient();
         String url = String.format("https://api.airtable.com/v0/%s/%s", AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
+                .header("Content-Type", "application/json") 
                 .header("Authorization", "Bearer " + AIRTABLE_ACCESS_TOKEN)
                 .POST(HttpRequest.BodyPublishers.ofString(data.toString()))
                 .build();
 
         try {
-            client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println(response.body());
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
         }
