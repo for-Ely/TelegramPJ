@@ -57,7 +57,6 @@ public class AirtableService {
     }
 
     public static ChatInfo getChatInfo(long chatId) {
-        // https://api.airtable.com/v0/apphQwFKwdK1suNIC/tblZlaKn2jdn5A4Tz?filterByFormula=chatId=6300840933
         HttpClient client = HttpClient.newHttpClient();
         String url = String.format("https://api.airtable.com/v0/%s/%s?filterByFormula=chatId=%d", AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME_CHATINFO, chatId);
         HttpRequest request = HttpRequest.newBuilder()
