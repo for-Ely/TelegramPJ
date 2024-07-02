@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.json.JSONObject;
 
@@ -54,16 +55,15 @@ public class AirtableService {
             String chatTitle = fields.optString("chatTitle", "");
             long memberCount = fields.optLong("memberCount", -1);
             String inviteLink = fields.optString("inviteLink", "");
-            ChatInfo chatInfo = new ChatInfo(chatId1, chatType, chatTypeId, isChannel, chatTitle, memberCount,
-                    inviteLink);
-            return chatInfo;
+
+            return new ChatInfo(chatId1, chatType, chatTypeId, isChannel, chatTitle, memberCount, inviteLink);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         return null;
     }
 
-    public static ArrayList<ChatInfo> getChatsInfo() {
+    public static List<ChatInfo> getChatsInfo() {
         HttpClient client = HttpClient.newHttpClient();
         String url = String.format("https://api.airtable.com/v0/%s/%s", AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME_CHATINFO);
 
@@ -75,7 +75,7 @@ public class AirtableService {
         try {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             JSONObject jsonObject = new JSONObject(response.body());
-            ArrayList<ChatInfo> chatsInfo = new ArrayList<>();
+            List<ChatInfo> chatsInfo = new ArrayList<>();
             for (int i = 0; i < jsonObject.getJSONArray("records").length(); i++) {
                 JSONObject fields = jsonObject.getJSONArray("records").getJSONObject(i).getJSONObject("fields");
                 chatsInfo.add(new ChatInfo(
@@ -91,16 +91,11 @@ public class AirtableService {
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        return null;
+        return new ArrayList<>();
     }
 
     public static boolean ifExistChatInfo(long chatId) {
-        System.out.println(getChatInfo(chatId));
-        System.out.println("Checking if chat exists in Airtable");
-        if (getChatInfo(chatId) != null) {
-            return true;
-        }
-        return false;
+        return (getChatInfo(chatId) != null);
     }
 
     public static void updateChatInfo(long chatId, JSONObject data) {

@@ -53,7 +53,6 @@ public class ChatInfo {
 
 
     public JSONObject chatInfotoAirTableFormat() {
-        System.out.println("ChatInfo: " + this.chatId);
         JSONObject fields = new JSONObject();
         fields.put("chatId", this.chatId);
         fields.put("chatType", this.chatType);
@@ -73,14 +72,13 @@ public class ChatInfo {
     }
     public ChatInfo airTableFormattoChatInfo(JSONObject airTableFormat) {
         JSONObject fields = airTableFormat.getJSONArray("records").getJSONObject(0).getJSONObject("fields");
-        long chatId = fields.getLong("chatId");
-        String chatType = fields.getString("chatType");
-        long chatTypeId = fields.getLong("chatTypeId");
-        boolean isChannel = fields.getBoolean("isChannel");
-        String chatTitle = fields.getString("chatTitle");
-        long memberCount = fields.getLong("memberCount");
-        String inviteLink = fields.getString("inviteLink");
-
-        return new ChatInfo(chatId, chatType, chatTypeId, isChannel, chatTitle, memberCount, inviteLink);
+            return new ChatInfo(
+                    fields.optLong("chatId", -1),
+                    fields.optString("chatType", ""),
+                    fields.optLong("chatTypeId", -1),
+                    fields.optBoolean("isChannel", false),
+                    fields.optString("chatTitle", ""),
+                    fields.optLong("memberCount", -1),
+                    fields.optString("inviteLink", ""));
     }
 }
