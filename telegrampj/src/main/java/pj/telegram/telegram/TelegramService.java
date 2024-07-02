@@ -11,7 +11,6 @@ import it.tdlight.client.SimpleTelegramClientBuilder;
 import it.tdlight.client.SimpleTelegramClientFactory;
 import it.tdlight.client.TDLibSettings;
 import it.tdlight.jni.TdApi;
-import it.tdlight.jni.TdApi.AuthorizationState;
 import it.tdlight.jni.TdApi.MessageContent;
 import it.tdlight.jni.TdApi.MessageSenderUser;
 
@@ -27,7 +26,6 @@ public final class TelegramService {
         try {
             new TelegramService().start();
         } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -136,11 +134,6 @@ public final class TelegramService {
                             for (TdApi.ChatMember chatMember : result.members) {
                                 client.send(new TdApi.AddChatMember(chatId,
                                         (((MessageSenderUser) chatMember.memberId).userId), 0));
-                            }
-                            try {
-                                Thread.sleep(2000);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
                             }
                             for (TdApi.ChatMember chatMember : result.members) {
                                 kickChatMemeber(chatId, ((MessageSenderUser) chatMember.memberId).userId);
