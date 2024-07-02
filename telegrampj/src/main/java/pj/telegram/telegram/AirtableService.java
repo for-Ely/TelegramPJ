@@ -1,4 +1,4 @@
-package pj.telegram.telegramservice;
+package pj.telegram.telegram;
 
 import java.io.IOException;
 import java.net.URI;
@@ -31,10 +31,10 @@ public class AirtableService {
         }
     }
 
-    public static boolean ifExistChatInfo(long chatId) {
+    public static ChatInfo getChatInfo(long chatId) {
         HttpClient client = HttpClient.newHttpClient();
-        String url = String.format("https://api.airtable.com/v0/%s/%s", AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME_CHATINFO);
-
+        String url = String.format("https://api.airtable.com/v0/%s/%s?filterByFormula=chatId=%d", AIRTABLE_BASE_ID,
+                AIRTABLE_TABLE_NAME_CHATINFO, chatId);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Authorization", "Bearer " + AIRTABLE_ACCESS_TOKEN)
@@ -43,36 +43,10 @@ public class AirtableService {
         try {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             JSONObject jsonObject = new JSONObject(response.body());
-            for (int i = 0; i < jsonObject.getJSONArray("records").length(); i++) {
-                long chatIdFromAirtable = jsonObject.getJSONArray("records").getJSONObject(i).getJSONObject("fields")
-                        .getLong("chatId");
-                if (chatIdFromAirtable == chatId) {
-                    return true;
-                }
-            }
-        } catch (IOException | InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        return false;
-    }
-
-    public static ChatInfo getChatInfo(long chatId) {
-        HttpClient client = HttpClient.newHttpClient();
-        String url = String.format("https://api.airtable.com/v0/%s/%s?filterByFormula=chatId=%d", AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME_CHATINFO, chatId);
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Authorization", "Bearer " + AIRTABLE_ACCESS_TOKEN)
-            .GET()
-            .build();
-        try {         
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            JSONObject jsonObject = new JSONObject(response.body());
-            JSONObject fields = jsonObject.getJSONArray("records").getJSONObject(0).getJSONObject("fields");
-
-            if (fields == null) {
+            if (jsonObject.getJSONArray("records").length() == 0) {
                 return null;
             }
-
+            JSONObject fields = jsonObject.getJSONArray("records").getJSONObject(0).getJSONObject("fields");
             long chatId1 = fields.optLong("chatId", -1);
             String chatType = fields.optString("chatType", "");
             long chatTypeId = fields.optLong("chatTypeId", -1);
@@ -80,15 +54,15 @@ public class AirtableService {
             String chatTitle = fields.optString("chatTitle", "");
             long memberCount = fields.optLong("memberCount", -1);
             String inviteLink = fields.optString("inviteLink", "");
-            ChatInfo chatInfo = new ChatInfo(chatId1, chatType, chatTypeId, isChannel, chatTitle, memberCount, inviteLink);
-            System.out.println("Sy");
-
+            ChatInfo chatInfo = new ChatInfo(chatId1, chatType, chatTypeId, isChannel, chatTitle, memberCount,
+                    inviteLink);
             return chatInfo;
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         return null;
     }
+
     public static ArrayList<ChatInfo> getChatsInfo() {
         HttpClient client = HttpClient.newHttpClient();
         String url = String.format("https://api.airtable.com/v0/%s/%s", AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME_CHATINFO);
@@ -111,13 +85,49 @@ public class AirtableService {
                         fields.optBoolean("isChannel", false),
                         fields.optString("chatTitle", ""),
                         fields.optLong("memberCount", -1),
-                        fields.optString("inviteLink", "")
-                ));
+                        fields.optString("inviteLink", "")));
             }
             return chatsInfo;
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         return null;
+    }
+
+    public static boolean ifExistChatInfo(long chatId) {
+        System.out.println(getChatInfo(chatId));
+        System.out.println("Checking if chat exists in Airtable");
+        if (getChatInfo(chatId) != null) {
+            return true;
+        }
+        return false;
+    }
+
+    public static void updateChatInfo(long chatId, JSONObject data) {
+        HttpClient client = HttpClient.newHttpClient();
+        String url = String.format("https://api.airtable.com/v0/%s/%s?filterByFormula=chatId=%d", AIRTABLE_BASE_ID,
+                AIRTABLE_TABLE_NAME_CHATINFO, chatId);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + AIRTABLE_ACCESS_TOKEN)
+                .GET()
+                .build();
+        try {
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JSONObject jsonObject = new JSONObject(response.body());
+            String recordId = jsonObject.getJSONArray("records").getJSONObject(0).getString("id");
+            String deleteUrl = String.format("https://api.airtable.com/v0/%s/%s/%s", AIRTABLE_BASE_ID,
+                    AIRTABLE_TABLE_NAME_CHATINFO, recordId);
+            HttpRequest deleteRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(deleteUrl))
+                    .header("Authorization", "Bearer " + AIRTABLE_ACCESS_TOKEN)
+                    .DELETE()
+                    .build();
+            client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
+            sendChatInfoData(data);
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
     }
 }

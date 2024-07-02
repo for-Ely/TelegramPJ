@@ -1,4 +1,4 @@
-package pj.telegram.telegramservice;
+package pj.telegram.telegram;
 
 import java.util.ArrayList;
 
@@ -71,5 +71,16 @@ public class ChatInfo {
         
         return records;
     }
+    public ChatInfo airTableFormattoChatInfo(JSONObject airTableFormat) {
+        JSONObject fields = airTableFormat.getJSONArray("records").getJSONObject(0).getJSONObject("fields");
+        long chatId = fields.getLong("chatId");
+        String chatType = fields.getString("chatType");
+        long chatTypeId = fields.getLong("chatTypeId");
+        boolean isChannel = fields.getBoolean("isChannel");
+        String chatTitle = fields.getString("chatTitle");
+        long memberCount = fields.getLong("memberCount");
+        String inviteLink = fields.getString("inviteLink");
 
+        return new ChatInfo(chatId, chatType, chatTypeId, isChannel, chatTitle, memberCount, inviteLink);
+    }
 }

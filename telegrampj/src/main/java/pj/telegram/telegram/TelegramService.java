@@ -1,4 +1,4 @@
-package pj.telegram.telegramservice;
+package pj.telegram.telegram;
 
 import it.tdlight.Init;
 import it.tdlight.Log;
@@ -18,7 +18,6 @@ import it.tdlight.jni.TdApi.MessageSenderUser;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public final class TelegramService {
@@ -74,11 +73,12 @@ public final class TelegramService {
             clientBuilder.addUpdateHandler(TdApi.UpdateAuthorizationState.class, this::onUpdateAuthorizationState);
             clientBuilder.addUpdateHandler(TdApi.UpdateNewMessage.class, this::onUpdateNewMessage);
             clientBuilder.addCommandHandler("stop", this::onStopCommand);
-            clientBuilder.addCommandHandler("searchPublicChat", this::onSearchPublicChat);
-            clientBuilder.addCommandHandler("createGroupChat", this::onCreateNewSupergroupChat);
-            clientBuilder.addCommandHandler("collectChatInfo", this::onCollectChatInfo);
-            clientBuilder.addCommandHandler("addChatMembers", this::onAddChatMembers);
-            clientBuilder.addCommandHandler("getChatList", this::onGetChatList);
+            clientBuilder.addCommandHandler("searchpublicchat", this::onSearchPublicChat);
+            clientBuilder.addCommandHandler("creategroupchat", this::onCreateNewSupergroupChat);
+            clientBuilder.addCommandHandler("collectchatinfo", this::onCollectChatInfo);
+            clientBuilder.addCommandHandler("addchatmembers", this::onAddChatMembers);
+            clientBuilder.addCommandHandler("getchatlist", this::onGetChatList);
+            clientBuilder.addCommandHandler("updatechatsinfo", this::onUpdateChatsInfo);
 
             this.client = clientBuilder.build(authenticationData);
         }
@@ -102,14 +102,13 @@ public final class TelegramService {
 
         private void selfNotice(String text) {
             TdApi.SendMessage sendMessage = new TdApi.SendMessage();
-            sendMessage.chatId = adminId;
+            sendMessage.chatId = 7181176105L;
             TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageText();
             ((TdApi.InputMessageText) inputMessageContent).text = new TdApi.FormattedText(text, null);
             sendMessage.inputMessageContent = inputMessageContent;
             System.out.println("Sending message: " + text);
             client.send(sendMessage);
         }
-
 
         private void onUpdateNewMessage(TdApi.UpdateNewMessage update) {
             MessageContent messageContent = update.message.content;
@@ -146,27 +145,45 @@ public final class TelegramService {
             return senderId == adminId;
         }
 
-        private void getSupergroupMembers(long chatId, long superchatId, int offset, int limit) {
+        private void addChatMember(long chatId, long superchatId, int offset, int limit) {
+
             client.send(new TdApi.GetSupergroupMembers(superchatId, null, offset, limit))
                     .whenCompleteAsync((result, error) -> {
                         if (error == null) {
                             for (TdApi.ChatMember chatMember : result.members) {
-                                addChatMember(chatId, (((MessageSenderUser) chatMember.memberId).userId));
+                                client.send(new TdApi.AddChatMember(chatId,
+                                        (((MessageSenderUser) chatMember.memberId).userId), 0));
+                            }
+                            try {
+                                Thread.sleep(2000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            for (TdApi.ChatMember chatMember : result.members) {
+                                kickChatMemeber(chatId, ((MessageSenderUser) chatMember.memberId).userId);
                             }
                         }
                     });
         }
 
-        private void addChatMember(long chatId, long userId) {
-                client.send(new TdApi.AddChatMember(chatId, userId, 0));
+        private void kickChatMemeber(long chatId, long userId) {
+            client.send(new TdApi.SetChatMemberStatus(chatId, new TdApi.MessageSenderUser(userId),
+                    new TdApi.ChatMemberStatusLeft()));
         }
+
         private void onAddChatMembers(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
             if (!isAdmin(((MessageSenderUser) commandSender).userId)) {
                 return;
             }
             long chatId = chat.id;
-            long superchatId = Long.parseLong(arguments);
-            getSupergroupMembers(chatId, superchatId, 0, 200);
+            long targetchatId = Long.parseLong(arguments);
+            ChatInfo dataInfo = AirtableService.getChatInfo(targetchatId);
+            long superchatId = dataInfo.getChatTypeId();
+            int quantity = (int) dataInfo.getMemberCount();
+            for (int i = quantity; i > 0; i -= 200) {
+                addChatMember(chatId, superchatId, quantity - i, Math.min(i, 200));
+            }
+            // addChatMember(chatId, superchatId, 0, 200);
         }
 
         private void onGetChatList(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
@@ -176,8 +193,10 @@ public final class TelegramService {
             ArrayList<ChatInfo> chatInfoList = AirtableService.getChatsInfo();
             for (ChatInfo chatInfo : chatInfoList) {
                 // chat title and chat id
-                String result = String.format("Chat title: %s, Chat id: %s, Member count: %s , Chat Type id: %s",
-                        chatInfo.getChatTitle(), chatInfo.getChatId(), chatInfo.getMemberCount(), chatInfo.getChatTypeId());
+                String result = String.format(
+                        "Chat title: %s\nChat id: %s \nMember count: %s\nChat Type: %s \nChat Type id: %s",
+                        chatInfo.getChatTitle(), chatInfo.getChatId(), chatInfo.getMemberCount(),
+                        chatInfo.getChatType(), chatInfo.getChatTypeId());
                 selfNotice(result);
             }
         }
@@ -208,13 +227,8 @@ public final class TelegramService {
                     });
         }
 
-        private void onCollectChatInfo(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
-            if (!isAdmin(((MessageSenderUser) commandSender).userId)) {
-                return;
-            }
-            client.send(new TdApi.DeleteMessages(chat.id, new long[] { chat.lastMessage.id }, true));
-
-            client.send(new TdApi.GetChat(chat.id))
+        private void collectChatInfo(long chatId) {
+            client.send(new TdApi.GetChat(chatId))
                     .whenCompleteAsync((chatResult, error) -> {
                         if (error == null) {
                             if (chatResult.type instanceof TdApi.ChatTypeSupergroup chatTypeSupergroup) {
@@ -224,52 +238,63 @@ public final class TelegramService {
                                                 System.out.println("_______________________");
                                                 System.out.println(error1);
                                             } else {
-                                                long chatId = chat.id;
                                                 String chatType = chatResult.type.getClass().getSimpleName();
                                                 long chatTypeId = chatTypeSupergroup.supergroupId;
                                                 boolean isChannel = chatTypeSupergroup.isChannel;
                                                 String chatTitle = chatResult.title;
                                                 long memberCount = supergroupFullInfo.memberCount;
-                                                String inviteLink = supergroupFullInfo.inviteLink.inviteLink;
+                                                String inviteLink = new String();
+                                                if (supergroupFullInfo.inviteLink == null) {
+                                                    inviteLink = "";
+                                                }
+                                                else {
+                                                    inviteLink = supergroupFullInfo.inviteLink.inviteLink;
+                                                }
 
+                                                ChatInfo chatInfo = new ChatInfo(chatId, chatType, chatTypeId,
+                                                        isChannel, chatTitle, memberCount, inviteLink);
                                                 if (!AirtableService.ifExistChatInfo(chatId)) {
-                                                    ChatInfo chatInfo = new ChatInfo(chatId, chatType, chatTypeId,
-                                                            isChannel, chatTitle, memberCount, inviteLink);
                                                     AirtableService
                                                             .sendChatInfoData(chatInfo.chatInfotoAirTableFormat());
-                                                    selfNotice("Add chat info of: " + chatTitle + " " + chat.id
+                                                    selfNotice("Add chat info of: " + chatTitle + " " + chatId
                                                             + " successfully");
                                                 } else {
-                                                    selfNotice("Chat info of: " + chatTitle + " " + chat.id
-                                                            + " is already in the database");
+                                                    AirtableService
+                                                            .updateChatInfo(chatId,
+                                                                    chatInfo.chatInfotoAirTableFormat());
+                                                    selfNotice("Update chat info of: " + chatTitle + " " + chatId
+                                                            + " successfully");
                                                 }
                                             }
                                         });
                             }
                             if (chatResult.type instanceof TdApi.ChatTypePrivate chatTypePrivate) {
-                                client.send(new TdApi.GetChat(chatTypePrivate.userId))
-                                        .whenCompleteAsync((userInfo, error1) -> {
+                                client.send(new TdApi.GetUser(chatTypePrivate.userId))
+                                        .whenCompleteAsync((user, error1) -> {
                                             if (error1 != null) {
                                                 System.out.println("_______________________");
                                                 System.out.println(error1);
                                             } else {
-                                                long chatId = chat.id;
                                                 String chatType = chatResult.type.getClass().getSimpleName();
                                                 long chatTypeId = chatTypePrivate.userId;
                                                 boolean isChannel = false;
-                                                String chatTitle = userInfo.title;
+                                                String chatTitle = user.firstName + " " + user.lastName;
                                                 long memberCount = 1;
-                                                String inviteLink = null;
+                                                String inviteLink = "";
+
+                                                ChatInfo chatInfo = new ChatInfo(chatId, chatType, chatTypeId,
+                                                        isChannel, chatTitle, memberCount, inviteLink);
                                                 if (!AirtableService.ifExistChatInfo(chatId)) {
-                                                    ChatInfo chatInfo = new ChatInfo(chatId, chatType, chatTypeId,
-                                                            isChannel, chatTitle, memberCount, inviteLink);
                                                     AirtableService
                                                             .sendChatInfoData(chatInfo.chatInfotoAirTableFormat());
-                                                    selfNotice("Add chat info of: " + chatTitle + " " + chat.id
+                                                    selfNotice("Add chat info of: " + chatTitle + " " + chatId
                                                             + " successfully");
                                                 } else {
-                                                    selfNotice("Chat info of: " + chatTitle + " " + chat.id
-                                                            + " is already in the database");
+                                                    AirtableService
+                                                            .updateChatInfo(chatId,
+                                                                    chatInfo.chatInfotoAirTableFormat());
+                                                    selfNotice("Update chat info of: " + chatTitle + " " + chatId
+                                                            + " successfully");
                                                 }
                                             }
                                         });
@@ -277,6 +302,30 @@ public final class TelegramService {
 
                         }
                     });
+        }
+
+        private void onCollectChatInfo(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
+            if (!isAdmin(((MessageSenderUser) commandSender).userId)) {
+                return;
+            }
+            client.send(new TdApi.DeleteMessages(chat.id, new long[] { chat.lastMessage.id }, true));
+            long chatId = chat.id;
+            collectChatInfo(chatId);
+        }
+
+        private void updateChatsInfo() {
+            ArrayList<ChatInfo> chatInfoList = AirtableService.getChatsInfo();
+            for (ChatInfo chatInfo : chatInfoList) {
+                long chatId = chatInfo.getChatId();
+                collectChatInfo(chatId);
+            }
+        }
+
+        private void onUpdateChatsInfo(TdApi.Chat chat, TdApi.MessageSender commandSender, String arguments) {
+            if (!isAdmin(((MessageSenderUser) commandSender).userId)) {
+                return;
+            }
+            updateChatsInfo();
         }
     }
 }
